@@ -18,7 +18,6 @@ Changelog:
 >> http://rog.ee/versions/show_me_my_assets
 
 =====================================================
-
 */
 
 
@@ -40,7 +39,7 @@ if (! defined('ROGEE_SMMA_VERSION'))
  *
  * @package RogEE Show Me My Assets
  * @author Michael Rog <michael@michaelrog.com>
- * @copyright 2010 Michael Rog
+ * @copyright 2012 Michael Rog
  * @see http://rog.ee/show_me_my_assets
  */
 class Show_me_my_assets_ext
@@ -51,7 +50,7 @@ class Show_me_my_assets_ext
 	var $name = "RogEE Show Me My Assets" ;
 	var $version = ROGEE_SMMA_VERSION ;
 	var $description = "Redirects the File Manager CP link to the Assets file browser" ;
-	var $settings_exist = "n" ;
+	var $settings_exist = "y" ;
 	var $docs_url = "http://rog.ee/show_me_my_assets" ;
 	
 	
@@ -64,6 +63,13 @@ class Show_me_my_assets_ext
 	*/
 	function Show_me_my_assets_ext($settings='')
 	{
+	
+		$default_settings = array(
+			'replace_file_browser' => 'y',
+			'expand_subfolders' => 'y'
+		);
+		
+		$this->settings = is_array($settings) ? $settings : $default_settings;
 	
 		// ---------------------------------------------
 		//	Get a local EE object reference
@@ -84,6 +90,33 @@ class Show_me_my_assets_ext
 
 	/**
 	* ==============================================
+	* Settings
+	* ==============================================
+	*/
+	function settings()
+	{
+	
+		$settings_setup = array();
+		
+		// ---------------------------------------------
+		//	Want to replace EE's stupid File Manager with the Assets module?
+		// ---------------------------------------------
+	
+		$settings_setup['replace_file_browser'] = array('r', array('y' => "Yup!", 'n' => "Nope."), 'y');
+		
+		// ---------------------------------------------
+		//	Want to add some jQuery gobbledigook to try to expand subfolders in the File Browser?
+		// ---------------------------------------------
+	
+		$settings_setup['expand_subfolders'] = array('r', array('y' => "Yup!", 'n' => "Nope."), 'y');
+		
+		return $settings_setup;
+	
+	} // END settings()
+
+
+	/**
+	* ==============================================
 	* Activate Extension
 	* ==============================================
 	*
@@ -98,7 +131,7 @@ class Show_me_my_assets_ext
 	{
 
 		// ---------------------------------------------
-		//	Register the hooks for EE-side registrations (default EE Member module)
+		//	Register the hooks
 		// ---------------------------------------------
 		
 		$hook = array(
@@ -107,6 +140,18 @@ class Show_me_my_assets_ext
 			'hook'		=> 'cp_menu_array',
 			'settings'	=> serialize($this->settings),
 			'priority'	=> 1,
+			'version'	=> $this->version,
+			'enabled'	=> 'y'
+		);
+		
+		$this->EE->db->insert('extensions', $hook);
+
+		$hook = array(
+			'class'		=> __CLASS__,
+			'method'	=> 'expand_my_subfolders',
+			'hook'		=> 'cp_js_end',
+			'settings'	=> serialize($this->settings),
+			'priority'	=> 9,
 			'version'	=> $this->version,
 			'enabled'	=> 'y'
 		);
@@ -195,17 +240,36 @@ class Show_me_my_assets_ext
 	* Confirms that Assets is installed and that the user has permissions to see it.
 	* If so, replaces the File Manager CP link with a link to Assets.
 	*
+	* Fires on the "cp_menu_array" hook.
 	* @see http://blog.adamfairholm.com/expressionengine-cp-menu-manipulation/
 	*
-	* @param Array: menu items, from EE
+	* @param Array: menu items, from EE or from the previously-called extension
 	* @return Array: modified menu items
 	*
 	*/
 	function i_dont_want_no_ee_file_browser($menu)
 	{
+	
+		// ---------------------------------------------
+		//	Make sure we play nice with the other kids.
+		// ---------------------------------------------
+
+		if ($this->EE->extensions->last_call !== FALSE)
+		{
+			$menu = $this->EE->extensions->last_call;
+		}
+
+		// ---------------------------------------------
+		//	Bail now if the admin has this component turned off.
+		// ---------------------------------------------
+		
+		if (isset($this->settings['replace_file_browser']) && $this->settings['replace_file_browser'] == 'n')
+		{
+			return $menu;
+		}
 		
 		// ---------------------------------------------
-		//	We won't even bother unless we can find Assets in the exp_modules table.
+		//	We won't bother making changes unless we can find Assets in the exp_modules table.
 		//	(We need the module_id anyway.)
 		// ---------------------------------------------
 		
@@ -253,6 +317,62 @@ class Show_me_my_assets_ext
 						
 	} // END i_dont_want_no_ee_file_browser()
 
+
+	/**
+	* ==============================================
+	* Expand My Subfolders!
+	* ==============================================
+	*
+	* Here's an extra little nicety: A bit of jQuery to virtually click (expand) the first-level subfolders.
+	*
+	* Fires on the "cp_js_end" hook.
+	*
+	* @param String: JS code from EE
+	* @return String: JS code with my [super-ghetto] jQuery pixie dust appended
+	*
+	*/
+	function expand_my_subfolders($js)
+	{
+		
+		// ---------------------------------------------
+		//	Make sure we play nice with the other kids.
+		// ---------------------------------------------
+
+		if ($this->EE->extensions->last_call !== FALSE)
+		{
+			$js = $this->EE->extensions->last_call;
+		}
+		
+		// ---------------------------------------------
+		//	Bail now if the admin has this component turned off.
+		// ---------------------------------------------
+		
+		if (isset($this->settings['expand_subfolders']) && $this->settings['expand_subfolders'] == 'n')
+		{
+			return $js;
+		}
+		
+		// ---------------------------------------------
+		//	Sprinkle on some [super-ghetto] pixie dust...
+		// ---------------------------------------------
+		
+		$super_ghetto_pixie_dust =
+			"$(function(){" . NL
+			.	"assets_fm_view = function(){" . NL
+			.		"$('.assets-fm-toggle').click();" . NL
+			.	"}" . NL
+			.	"var do_it = setTimeout('assets_fm_view()', 500);" . NL
+			."});";
+		
+		$js .= NL . ";" . NL . $super_ghetto_pixie_dust;
+		
+		// ---------------------------------------------
+		//	Returning the modified menu items Array to EE
+		// ---------------------------------------------
+		
+		return $js;
+						
+	} // END expand_my_subfolders()
 
 
 } // END CLASS

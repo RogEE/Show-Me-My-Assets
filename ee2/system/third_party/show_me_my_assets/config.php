@@ -23,7 +23,7 @@ Changelog:
 
 
 $config['name'] = 'RogEE Show Me My Assets';
-$config['version'] = '1.0.0';
+$config['version'] = '1.1.0';
 $config['nsm_addon_updater']['versions_xml'] = 'http://rog.ee/versions/show_me_my_assets';
     
 /* End of file config.php */

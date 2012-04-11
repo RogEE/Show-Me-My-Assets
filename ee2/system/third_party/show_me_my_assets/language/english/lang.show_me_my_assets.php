@@ -16,6 +16,10 @@ $lang = array(
 
 'rogee_smma_language' => 'RogEE Show Me My Assets speaks English!',
 
+//----------------------------------------
+
+'replace_file_browser' => "Replace the native File Manager with the Assets file browser?",
+'expand_subfolders' => "Try to auto-expand subfolders?",
 
 // END
 ''=>''

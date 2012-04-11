@@ -50,9 +50,9 @@ class Show_me_my_assets_ext
     	
 	var $name = "RogEE Show Me My Assets" ;
 	var $version = ROGEE_SMMA_VERSION ;
-	var $description = "Redirects the CP menu link for the EE File Manager with the Assets File Browser" ;
+	var $description = "Redirects the File Manager CP link to the Assets file browser" ;
 	var $settings_exist = "n" ;
-	var $docs_url = "http//rog.ee/show_me_my_assets" ;
+	var $docs_url = "http://rog.ee/show_me_my_assets" ;
 	
 	
 	/**

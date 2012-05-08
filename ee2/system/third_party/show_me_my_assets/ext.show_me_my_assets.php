@@ -6,6 +6,7 @@
 RogEE "Show Me My Assets!"
 an extension for ExpressionEngine 2
 by Michael Rog
+version 1.1.1
 
 Contact Michael with questions, feedback, suggestions, bugs, etc.
 >> http://rog.ee/show_me_my_assets
@@ -355,16 +356,25 @@ class Show_me_my_assets_ext
 		// ---------------------------------------------
 		//	Sprinkle on some [super-ghetto] pixie dust...
 		// ---------------------------------------------
+			
+		$super_ghetto_pixie_dust = <<<DOIT
+		;
+		$(function(){
 		
-		$super_ghetto_pixie_dust =
-			"$(function(){" . NL
-			.	"assets_fm_view = function(){" . NL
-			.		"$('.assets-fm-toggle').click();" . NL
-			.	"}" . NL
-			.	"var do_it = setTimeout('assets_fm_view()', 500);" . NL
-			."});";
+			assets_fm_view = function(){
+				$('.assets-fm-folder a').not('.assets-fm-expanded').find('.assets-fm-toggle').click();
+			}
+			
+			do_it_onload = setTimeout('assets_fm_view()', 500);
 		
-		$js .= NL . ";" . NL . $super_ghetto_pixie_dust;
+			$('.assets-add').live('click',function(){
+				do_it_onclick = setTimeout('assets_fm_view()', 1000);
+			});
+			
+		});
+DOIT;
+
+		$js .= NL . $super_ghetto_pixie_dust;
 		
 		// ---------------------------------------------
 		//	Returning the modified menu items Array to EE
